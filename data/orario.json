@@ -1,0 +1,53 @@
+{
+  "Classe": "5",
+  "Sezione": "CIT",
+  "GiornoRientro" : "Lunedi",
+  "Giorni": {
+    "Lunedi": [
+      "Italiano",
+      "Italiano",
+      "Inglese",
+      "Tecnologie",
+      "Educazione fisica",
+      "Educazione fisica",
+      "Informatica",
+      "Informatica",
+      "Religione"
+    ],
+    "Martedi": [
+      "Francese",
+      "Inglese",
+      "GPOI",
+      "GPOI",
+      "Sistemi e reti",
+      "Storia"
+    ],
+    "Mercoledi": [
+      "Matematica",
+      "Matematica",
+      "Tecnologie",
+      "Tecnologie",
+      "Informatica",
+      "Informatica"
+    ],
+    "Giovedi": [
+      "Francese",
+      "Francese",
+      "Francese",
+      "Sistemi e reti",
+      "Sistemi e reti",
+      "Tecnologie",
+      "Italiano",
+      "Italiano",
+      "GPOI"
+    ],
+    "Venerdi": [
+      "Inglese",
+      "Matematica",
+      "Sistemi e reti",
+      "Storia",
+      "Informatica",
+      "Informatica"
+    ]
+  }
+}
