@@ -163,7 +163,7 @@ const uint8_t* TXT_FONT = u8g2_font_9x15B_mf;
 const uint8_t* BATT_FONT = u8g2_font_battery19_tn;
 const uint8_t* WIFI_FONT = u8g2_font_open_iconic_all_1x_t;
 
-const uint8_t MAX_PARTIAL_REFRESH = 25;
+const uint8_t MAX_PARTIAL_REFRESH = 30;
 const uint32_t PARTIAL_REFRESH_RATE = (30 * 1000); 
 uint64_t last_partial_refresh = 0;
 uint16_t count_partial_refresh = 0;
@@ -261,21 +261,6 @@ enum materie {
   M9,
   M10
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 // stable
@@ -906,34 +891,6 @@ uint8_t last_min_rim = 0;
 
 
 void loop() {
-  /*digitalWrite(8, HIGH);
-  delay(100);
-  digitalWrite(8, LOW);
-  delay(100);*/
-  /*
-  curr_time = getTime();
-  if (last_time != curr_time || is_full_refresh) {
-    Serial.println("time refresh");
-    printXText(curr_time, MAIN_FONT, 25);
-    last_time = curr_time;
-  }
-
-  curr_perc = getBatteryPercentage();
-  if (last_perc != curr_perc || is_full_refresh) {
-    Serial.println("batt refresh");
-    printText(String(curr_perc) + '%', TXT_FONT, 0, 0);
-    last_perc = curr_perc;
-  }
-
-  curr_date = getDate();
-  if (last_date != curr_date || is_full_refresh) {
-    Serial.println("date refresh");
-
-    printXText(curr_date, TXT_FONT, 0);
-    last_date = curr_date;
-  }
-  */
-
   if (((millis() - last_partial_refresh) > PARTIAL_REFRESH_RATE) || wifi_forced_refresh || time_change) {
     checkRefreshState();
     
@@ -1082,6 +1039,7 @@ void loop() {
             act_subj = doc["Giorni"][day][M6].as<String>();
 
             min_rimanenti = 20 - act_min;
+
           }
           break;
 
@@ -1093,9 +1051,14 @@ void loop() {
       if (isReentryDay()) {
         switch (getHour()) {
           case 13:
-            act_subj = pranzo;
-
-            min_rimanenti = 20 + (60 - act_min);
+            if (act_min < 20) {
+              act_subj = doc["Giorni"][day][M6].as<String>();
+              next_subj = pranzo;
+            } else {
+              act_subj = pranzo;
+              min_rimanenti = 20 + (60 - act_min);
+            }
+            
             break;
           case 14:
             if (act_min < 20) {
@@ -1215,9 +1178,6 @@ void loop() {
     time_change = false;
   }
 
-
-
-
   // l'ora viene aggiornata appena cambia
   curr_time = getTime();
   if (curr_time != last_time || is_full_refresh) {
@@ -1226,10 +1186,6 @@ void loop() {
     time_change = true;
     //fillRect();
   }
-
-
-
-
 
   // gestione WiFi mode
   if (isrBtnChange() != 0) {
