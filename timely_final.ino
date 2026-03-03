@@ -34,6 +34,7 @@ const IPAddress NMASK(255, 255, 255, 0);
 const uint16_t AP_ON_TIMER = (60 * 1000); // two minutes
 uint64_t ap_last_on = 0;
 bool ap_state = false;
+bool ap_state_set = false;
 
 // Set web server port number to 80
 AsyncWebServer server(80);
@@ -186,7 +187,6 @@ RTC_DS1307 rtc;
 String last_time = "";
 String curr_time = "";
 
-String curr_date = "";
 String last_date = "";
 
 
@@ -197,8 +197,7 @@ String last_date = "";
 Adafruit_BMP280 bmp;
 //float last_temp = 0;
 //float curr_temp = 0;
-uint16_t temp_read_rate = 5000; // ms
-uint64_t last_temp_read = 0;
+String last_temp = "";
 
 
 /*===================================
@@ -223,8 +222,7 @@ const float BATT_FULL_VOLTAGE = 4.2;
 const float CENTRAL_NODE_VOLTAGE = (BATT_FULL_VOLTAGE * R2) / (R1 + R2);
 const uint16_t BATT_FULL_READ    = 3600;
 
-uint8_t curr_perc = 255;
-uint8_t last_perc = 255;
+uint8_t last_batt = 0;
 
 
 /*==============================
@@ -261,6 +259,10 @@ enum materie {
   M9,
   M10
 };
+
+String last_subj = "";
+String last_next_subj = "";
+uint8_t last_min_rim = 0;
 
 
 // stable
@@ -668,6 +670,47 @@ void printXText(String text, const uint8_t* font, int16_t offset_y) {
   attachBtnInterrupts();
 }
 
+void printXTextFull(String text, const uint8_t* font, int16_t offset_y) {
+  dettachBtnInterrupts();
+  delay(10);
+
+  
+
+  int16_t offset_x = 0;
+
+  eink.setRotation(E_INK_ROTATION);
+
+  display.setFontMode(1);
+  display.setFontDirection(0); // left to right (this is default)
+  display.setForegroundColor(BLACK);
+  display.setBackgroundColor(WHITE);
+  display.setFont(font);  // select u8g2 font from here: https://github.com/olikraus/u8g2/wiki/fntlistall
+
+  int16_t tw = display.getUTF8Width(text.c_str()); // text box width
+  int16_t ta = display.getFontAscent();
+  int16_t td = display.getFontDescent();
+  int16_t th = ta - td; // text box height
+  // center bounding box by transposition of origin:
+  // y is base line for u8g2Fonts, like for Adafruit_GFX True Type fonts
+  uint16_t x = (eink.width() - tw) / 2;
+  uint16_t y = offset_y + ta;
+
+  // partial window
+  eink.setPartialWindow(0, offset_y, eink.width(), th);
+
+  eink.firstPage();
+  do {
+    eink.fillRect(0, offset_y, eink.width(), th, WHITE);
+    //display.fillScreen(GxEPD_BLACK);
+    //eink.fillRect(0, 0, eink.width(), eink.height(), GxEPD_WHITE);
+    display.setCursor(x, y);
+    display.print(text);
+  } while (eink.nextPage());
+  count_partial_refresh++;
+
+  attachBtnInterrupts();
+}
+
 void deleteXText(String text, const uint8_t* font, int16_t offset_y) {
   dettachBtnInterrupts();
   delay(10);
@@ -846,6 +889,325 @@ uint8_t getMinute() {
 }
 
 
+void printSchoolUpdates() {
+  if(isSchoolDay()) {
+    //Serial.println(daysOfTheWeek[now.dayOfTheWeek()]);
+    String next_subj = "";
+    String act_subj = "";
+    char* intervallo = "Intervallo";
+    char* pranzo = "Pausa pranzo";
+    uint8_t act_min = getMinute();
+    int8_t min_rimanenti = -1;
+    char* day = daysOfTheWeek[rtc.now().dayOfTheWeek()];
+
+    // tutti i giorni scolastici
+    switch (getHour()) {
+      case 7:
+        if (act_min >= 50)
+          next_subj = doc["Giorni"][day][M1].as<String>();
+          //Serial.println(next_subj);
+        break;
+
+      case 8:
+        if (act_min < 50) {
+          // primo modulo
+          act_subj = doc["Giorni"][day][M1].as<String>();
+
+          if (act_min >= 45) {
+            // next subject
+            next_subj = doc["Giorni"][day][M2].as<String>();
+          }
+
+          min_rimanenti = 50 - act_min;
+        } else {
+          // secondo modulo
+          act_subj = doc["Giorni"][day][M2].as<String>();
+
+          min_rimanenti = 40 + (60 - act_min);
+        }
+        break;
+        
+      case 9:
+        if (act_min < 40) {
+          // secondo modulo
+          act_subj = doc["Giorni"][day][M2].as<String>();
+
+          if (act_min >= 35) {
+            // intervallo fra 10 min
+            next_subj = intervallo;
+          }
+
+          min_rimanenti = 40 - act_min;
+        } else if (act_min < 50) {
+          // intervallo
+          act_subj = intervallo;
+
+          // next subj
+          next_subj = doc["Giorni"][day][M3].as<String>();
+
+          min_rimanenti = 50 - act_min;
+        } else {
+          // terzo modulo
+          act_subj = doc["Giorni"][day][M3].as<String>();
+          min_rimanenti = 40 + (60 - act_min);
+        }
+        break;
+        
+      case 10:
+        if (act_min < 40) {
+          // terzo modulo
+          act_subj = doc["Giorni"][day][M3].as<String>();
+
+          if (act_min >= 35) {
+            // next subject
+            next_subj = doc["Giorni"][day][M4].as<String>();
+          }
+
+          min_rimanenti = 40 - act_min;
+        } else {
+          // quarto modulo
+          act_subj = doc["Giorni"][day][M4].as<String>();
+          min_rimanenti = 30 + (60 - act_min);
+        }
+        break;
+        
+      case 11:
+        if (act_min < 30) {
+          // quarto modulo
+          act_subj = doc["Giorni"][day][M4].as<String>();
+
+          if (act_min >= 25) {
+            // next subj
+            next_subj = intervallo;
+          }
+
+          min_rimanenti = 30 - act_min;
+        } else if (act_min < 40) {
+          act_subj = intervallo;
+
+          next_subj = doc["Giorni"][day][M5].as<String>();
+
+          min_rimanenti = 40 - act_min;
+        } else {
+          // quinto modulo
+          act_subj = doc["Giorni"][day][M5].as<String>();
+
+          min_rimanenti = 30 + (60 - act_min);
+        }
+        break;
+        
+      case 12:
+        if (act_min < 30) {
+          // quinto modulo
+          act_subj = doc["Giorni"][day][M5].as<String>();
+
+          if (act_min >= 25) {
+            // next subj
+            next_subj = doc["Giorni"][day][M6].as<String>();
+          }
+
+          min_rimanenti = 30 - act_min;
+        } else {
+          // sesto modulo
+          act_subj = doc["Giorni"][day][M6].as<String>();
+
+          min_rimanenti = 20 + (60 - act_min);
+        }
+        break;
+        
+      case 13:
+        if (act_min < 20) {
+          act_subj = doc["Giorni"][day][M6].as<String>();
+
+          min_rimanenti = 20 - act_min;
+
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    // giorni con rientro
+    if (isReentryDay()) {
+      switch (getHour()) {
+        case 13:
+          if (act_min < 20) {
+            act_subj = doc["Giorni"][day][M6].as<String>();
+            next_subj = pranzo;
+          } else {
+            act_subj = pranzo;
+            min_rimanenti = 20 + (60 - act_min);
+          }
+          
+          break;
+        case 14:
+          if (act_min < 20) {
+            act_subj = pranzo;
+
+            // next subj
+            if (act_min > 10) {
+              next_subj = doc["Giorni"][day][M7].as<String>();
+            }
+
+            min_rimanenti = 20 - act_min;
+          } else {
+            act_subj = doc["Giorni"][day][M7].as<String>();
+
+            min_rimanenti = 10 + (60 - act_min);
+          }
+          break;
+        case 15:
+          if (act_min < 10) {
+            act_subj = doc["Giorni"][day][M7].as<String>();
+            next_subj = doc["Giorni"][day][M8].as<String>();
+
+            min_rimanenti = 10 - act_min;
+          } else if (act_min >= 55) {
+            act_subj = doc["Giorni"][day][M8].as<String>();
+            next_subj = intervallo;
+
+            min_rimanenti = 60 - act_min;
+          } else {
+            act_subj = doc["Giorni"][day][M8].as<String>();
+
+            min_rimanenti = 60 - act_min;
+          }
+          break;
+        case 16:
+          if (act_min < 5) {
+            act_subj = intervallo;
+            next_subj = doc["Giorni"][day][M9].as<String>();
+
+            min_rimanenti = 5 - act_min;
+          } else if (act_min < 55) {
+            act_subj = doc["Giorni"][day][M9].as<String>();
+
+            min_rimanenti = 55 - act_min;
+          }
+          break;
+        default:
+          break;
+      }
+
+      if (doc["Classe"].as<int>() == 2 && doc["GiornoRientro"].as<String>() == day) {
+        switch (getHour()) {
+          case 16:
+            if (act_min < 55) {
+              act_subj = doc["Giorni"][day][M9].as<String>();
+              next_subj = doc["Giorni"][day][M10].as<String>();
+            } else {
+              act_subj = doc["Giorni"][day][M10].as<String>();
+
+              min_rimanenti = 45 + (60 - act_min);
+            }
+
+            break;
+
+          case 17:
+            if (act_min < 45) {
+              act_subj = doc["Giorni"][day][M10].as<String>();
+
+              min_rimanenti = 45 - act_min;
+            }
+            break;
+
+          default:
+            break;
+        }
+      }
+    }
+
+    char* min_rim_prefix = "Minuti rimanenti: ";
+    
+    // funziona ma si può fare meglio, più ottimizzato per lo sche
+
+    if (act_subj != last_subj) {
+      //Serial.println("test");
+      //printXText(act_subj, TXT_FONT, 85);
+      printXTextFull(act_subj, TXT_FONT, 72);
+
+      
+
+      /*if (last_min_rim != min_rimanenti)
+        deleteXText(min_rim_prefix + String(last_min_rim), TXT_FONT, 90);
+      printXText(min_rim_prefix + String(min_rimanenti), TXT_FONT, 90);*/
+
+      last_subj = act_subj;
+      // last_min_rim = min_rimanenti;
+    }/* else {
+      deleteXText(last_subj, TXT_FONT, 72);
+      deleteXText(min_rim_prefix + String(last_min_rim), TXT_FONT, 90);
+    }*/
+
+    if (min_rimanenti !=  -1) {
+      if (last_min_rim != min_rimanenti) {
+        printXTextFull(min_rim_prefix + String(min_rimanenti), TXT_FONT, 90);
+        last_min_rim = min_rimanenti;
+      }
+    } else if (last_min_rim != -1) {
+      printXTextFull("", TXT_FONT, 90);
+      last_min_rim = -1;
+    }
+    
+
+
+    if (next_subj != last_next_subj) {
+      /*if (next_subj != last_next_subj)
+        deleteXText(last_next_subj, TXT_FONT, 108);*/
+
+      printXTextFull("Next: " + next_subj, TXT_FONT, 108);
+      last_next_subj = next_subj;
+    }/* else {
+      deleteXText(last_next_subj, TXT_FONT, 108);
+    }*/
+
+  } // if
+}
+
+void printBatteryState() {
+  uint8_t act_batt = getBatteryTicks();
+
+  if (act_batt != last_batt) {
+    printText(String(act_batt), BATT_FONT, 4, 1, eink.width() - 19);
+    last_batt = act_batt;
+  }
+}
+
+void printDateWifi() {
+  String act_date = getDate();
+
+  if (!ap_state) {
+    if (act_date != last_date || ap_state_set) {
+      printXText(act_date, TXT_FONT, 0);
+      last_date = act_date;
+      ap_state_set = false;
+    }
+
+  }
+  else if (!ap_state_set) {
+    printXText("WiFi  mode", TXT_FONT, 0);
+    //printXText("8", WIFI_FONT, 0);
+    ap_state_set = true;
+  }
+}
+
+void printTemperature() {
+  String act_temp = getTemperature();
+
+  if (last_temp != act_temp) {
+    printTextRightAligned(act_temp, TXT_FONT, 0);
+    last_temp = act_temp;
+  }
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -884,299 +1246,27 @@ void setup() {
   //printText("NIZAR", TXT_FONT);
 }
 
-
-String last_subj = "";
-String last_next_subj = "";
-uint8_t last_min_rim = 0;
-
-
 void loop() {
   if (((millis() - last_partial_refresh) > PARTIAL_REFRESH_RATE) || wifi_forced_refresh || time_change) {
     checkRefreshState();
     
     //printXText(getTime(), MAIN_FONT, 30);
 
-    printText(String(getBatteryTicks()), BATT_FONT, 4, 1, eink.width() - 19);
-
-    if (!ap_state)
-      printXText(getDate(), TXT_FONT, 0);
-    else
-      printXText("WiFi  mode", TXT_FONT, 0);
-      //printXText("8", WIFI_FONT, 0);
+    printBatteryState();
     
-
-    printTextRightAligned(getTemperature(), TXT_FONT, 0);
-
-
-
-    if(isSchoolDay()) {
-      //Serial.println(daysOfTheWeek[now.dayOfTheWeek()]);
-      String next_subj = "";
-      String act_subj = "";
-      char* intervallo = "Intervallo";
-      char* pranzo = "Pausa pranzo";
-      uint8_t act_min = getMinute();
-      uint8_t min_rimanenti = 0;
-      char* day = daysOfTheWeek[rtc.now().dayOfTheWeek()];
-
-      // tutti i giorni scolastici
-      switch (getHour()) {
-        case 7:
-          if (act_min >= 50)
-            next_subj = doc["Giorni"][day][M1].as<String>();
-            //Serial.println(next_subj);
-          break;
-
-        case 8:
-          if (act_min < 50) {
-            // primo modulo
-            act_subj = doc["Giorni"][day][M1].as<String>();
-
-            if (act_min >= 45) {
-              // next subject
-              next_subj = doc["Giorni"][day][M2].as<String>();
-            }
-
-            min_rimanenti = 50 - act_min;
-          } else {
-            // secondo modulo
-            act_subj = doc["Giorni"][day][M2].as<String>();
-
-            min_rimanenti = 40 + (60 - act_min);
-          }
-          break;
-          
-        case 9:
-          if (act_min < 40) {
-            // secondo modulo
-            act_subj = doc["Giorni"][day][M2].as<String>();
-
-            if (act_min >= 35) {
-              // intervallo fra 10 min
-              next_subj = intervallo;
-            }
-
-            min_rimanenti = 40 - act_min;
-          } else if (act_min < 50) {
-            // intervallo
-            act_subj = intervallo;
-
-            // next subj
-            next_subj = doc["Giorni"][day][M3].as<String>();
-
-            min_rimanenti = 50 - act_min;
-          } else {
-            // terzo modulo
-            act_subj = doc["Giorni"][day][M3].as<String>();
-            min_rimanenti = 40 + (60 - act_min);
-          }
-          break;
-          
-        case 10:
-          if (act_min < 40) {
-            // terzo modulo
-            act_subj = doc["Giorni"][day][M3].as<String>();
-
-            if (act_min >= 35) {
-              // next subject
-              next_subj = doc["Giorni"][day][M4].as<String>();
-            }
-
-            min_rimanenti = 40 - act_min;
-          } else {
-            // quarto modulo
-            act_subj = doc["Giorni"][day][M4].as<String>();
-            min_rimanenti = 30 + (60 - act_min);
-          }
-          break;
-          
-        case 11:
-          if (act_min < 30) {
-            // quarto modulo
-            act_subj = doc["Giorni"][day][M4].as<String>();
-
-            if (act_min >= 25) {
-              // next subj
-              next_subj = intervallo;
-            }
-
-            min_rimanenti = 30 - act_min;
-          } else if (act_min < 40) {
-            act_subj = intervallo;
-
-            next_subj = doc["Giorni"][day][M5].as<String>();
-
-            min_rimanenti = 40 - act_min;
-          } else {
-            // quinto modulo
-            act_subj = doc["Giorni"][day][M5].as<String>();
-
-            min_rimanenti = 30 + (60 - act_min);
-          }
-          break;
-          
-        case 12:
-          if (act_min < 30) {
-            // quinto modulo
-            act_subj = doc["Giorni"][day][M5].as<String>();
-
-            if (act_min >= 25) {
-              // next subj
-              next_subj = doc["Giorni"][day][M6].as<String>();
-            }
-
-            min_rimanenti = 30 - act_min;
-          } else {
-            // sesto modulo
-            act_subj = doc["Giorni"][day][M6].as<String>();
-
-            min_rimanenti = 20 + (60 - act_min);
-          }
-          break;
-          
-        case 13:
-          if (act_min < 20) {
-            act_subj = doc["Giorni"][day][M6].as<String>();
-
-            min_rimanenti = 20 - act_min;
-
-          }
-          break;
-
-        default:
-          break;
-      }
-
-      // giorni con rientro
-      if (isReentryDay()) {
-        switch (getHour()) {
-          case 13:
-            if (act_min < 20) {
-              act_subj = doc["Giorni"][day][M6].as<String>();
-              next_subj = pranzo;
-            } else {
-              act_subj = pranzo;
-              min_rimanenti = 20 + (60 - act_min);
-            }
-            
-            break;
-          case 14:
-            if (act_min < 20) {
-              act_subj = pranzo;
-
-              // next subj
-              if (act_min > 10) {
-                next_subj = doc["Giorni"][day][M7].as<String>();
-              }
-
-              min_rimanenti = 20 - act_min;
-            } else {
-              act_subj = doc["Giorni"][day][M7].as<String>();
-
-              min_rimanenti = 10 + (60 - act_min);
-            }
-            break;
-          case 15:
-            if (act_min < 10) {
-              act_subj = doc["Giorni"][day][M7].as<String>();
-              next_subj = doc["Giorni"][day][M8].as<String>();
-
-              min_rimanenti = 10 - act_min;
-            } else if (act_min >= 55) {
-              act_subj = doc["Giorni"][day][M8].as<String>();
-              next_subj = intervallo;
-
-              min_rimanenti = 60 - act_min;
-            } else {
-              act_subj = doc["Giorni"][day][M8].as<String>();
-
-              min_rimanenti = 60 - act_min;
-            }
-            break;
-          case 16:
-            if (act_min < 5) {
-              act_subj = intervallo;
-              next_subj = doc["Giorni"][day][M9].as<String>();
-
-              min_rimanenti = 5 - act_min;
-            } else if (act_min < 55) {
-              act_subj = doc["Giorni"][day][M9].as<String>();
-
-              min_rimanenti = 55 - act_min;
-            }
-            break;
-          default:
-            break;
-        }
-
-        if (doc["Classe"].as<int>() == 2 && doc["GiornoRientro"].as<String>() == day) {
-          switch (getHour()) {
-            case 16:
-              if (act_min < 55) {
-                act_subj = doc["Giorni"][day][M9].as<String>();
-                next_subj = doc["Giorni"][day][M10].as<String>();
-              } else {
-                act_subj = doc["Giorni"][day][M10].as<String>();
-
-                min_rimanenti = 45 + (60 - act_min);
-              }
-
-              break;
-
-            case 17:
-              if (act_min < 45) {
-                act_subj = doc["Giorni"][day][M10].as<String>();
-
-                min_rimanenti = 45 - act_min;
-              }
-              break;
-
-            default:
-              break;
-          }
-        }
-      }
-
-      char* min_rim_prefix = "Minuti rimanenti: ";
-      
-      if (act_subj != "") {
-        //Serial.println("test");
-        //printXText(act_subj, TXT_FONT, 85);
-        if (act_subj != last_subj)
-          deleteXText(last_subj, TXT_FONT, 72);
-        printXText(act_subj, TXT_FONT, 72);
-
-        
-
-        if (last_min_rim != min_rimanenti)
-          deleteXText(min_rim_prefix + String(last_min_rim), TXT_FONT, 90);
-        printXText(min_rim_prefix + String(min_rimanenti), TXT_FONT, 90);
-
-        last_subj = act_subj;
-        last_min_rim = min_rimanenti;
-      } else {
-        deleteXText(last_subj, TXT_FONT, 72);
-        deleteXText(min_rim_prefix + String(last_min_rim), TXT_FONT, 90);
-      }
-
-      if (next_subj != "") {
-        next_subj = "Next: " + next_subj;
-
-        if (next_subj != last_next_subj)
-          deleteXText(last_next_subj, TXT_FONT, 108);
-
-        printXText(next_subj, TXT_FONT, 108);
-        last_next_subj = next_subj;
-      } else {
-        deleteXText(last_next_subj, TXT_FONT, 108);
-      }
-
-    } // if
-
+    printDateWifi();
+    
+    printTemperature();
+    
+    printSchoolUpdates();
+    
     last_partial_refresh = millis();
     wifi_forced_refresh = false;
     time_change = false;
   }
+
+
+
 
   // l'ora viene aggiornata appena cambia
   curr_time = getTime();
@@ -1186,6 +1276,14 @@ void loop() {
     time_change = true;
     //fillRect();
   }
+
+
+
+
+
+
+
+
 
   // gestione WiFi mode
   if (isrBtnChange() != 0) {
