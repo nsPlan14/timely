@@ -24,7 +24,7 @@ const char POWERED_NAME[] = "Powered by Stressbusters";
  */
 
 // Replace with your network credentials
-const char* SSID = "Timely by Stressbusters";
+const char* SSID = "SN00 - Timely by Stressbusters";
 const char* PASSWD = "pwdpassword";
 const char* HOSTNAME = "timely.local";
 
@@ -1122,26 +1122,14 @@ void printSchoolUpdates() {
     
     // funziona ma si può fare meglio, più ottimizzato per lo sche
 
-    if (act_subj != last_subj) {
-      //Serial.println("test");
-      //printXText(act_subj, TXT_FONT, 85);
+    if (act_subj != last_subj || is_full_refresh) {
       printXTextFull(act_subj, TXT_FONT, 72);
 
-      
-
-      /*if (last_min_rim != min_rimanenti)
-        deleteXText(min_rim_prefix + String(last_min_rim), TXT_FONT, 90);
-      printXText(min_rim_prefix + String(min_rimanenti), TXT_FONT, 90);*/
-
       last_subj = act_subj;
-      // last_min_rim = min_rimanenti;
-    }/* else {
-      deleteXText(last_subj, TXT_FONT, 72);
-      deleteXText(min_rim_prefix + String(last_min_rim), TXT_FONT, 90);
-    }*/
+    }
 
     if (min_rimanenti !=  -1) {
-      if (last_min_rim != min_rimanenti) {
+      if (last_min_rim != min_rimanenti || is_full_refresh) {
         printXTextFull(min_rim_prefix + String(min_rimanenti), TXT_FONT, 90);
         last_min_rim = min_rimanenti;
       }
@@ -1150,17 +1138,15 @@ void printSchoolUpdates() {
       last_min_rim = -1;
     }
     
-
-
-    if (next_subj != last_next_subj) {
-      /*if (next_subj != last_next_subj)
-        deleteXText(last_next_subj, TXT_FONT, 108);*/
-
-      printXTextFull("Next: " + next_subj, TXT_FONT, 108);
+    
+    
+    if (next_subj != last_next_subj || is_full_refresh) {
+      if (next_subj != "")
+        printXTextFull("Next: " + next_subj, TXT_FONT, 108);
+      else
+        printXTextFull("", TXT_FONT, 108);
       last_next_subj = next_subj;
-    }/* else {
-      deleteXText(last_next_subj, TXT_FONT, 108);
-    }*/
+    }
 
   } // if
 }
@@ -1168,7 +1154,7 @@ void printSchoolUpdates() {
 void printBatteryState() {
   uint8_t act_batt = getBatteryTicks();
 
-  if (act_batt != last_batt) {
+  if (act_batt != last_batt || is_full_refresh) {
     printText(String(act_batt), BATT_FONT, 4, 1, eink.width() - 19);
     last_batt = act_batt;
   }
@@ -1178,14 +1164,14 @@ void printDateWifi() {
   String act_date = getDate();
 
   if (!ap_state) {
-    if (act_date != last_date || ap_state_set) {
+    if (act_date != last_date || ap_state_set || is_full_refresh) {
       printXText(act_date, TXT_FONT, 0);
       last_date = act_date;
       ap_state_set = false;
     }
 
   }
-  else if (!ap_state_set) {
+  else if (!ap_state_set || is_full_refresh) {
     printXText("WiFi  mode", TXT_FONT, 0);
     //printXText("8", WIFI_FONT, 0);
     ap_state_set = true;
@@ -1195,7 +1181,7 @@ void printDateWifi() {
 void printTemperature() {
   String act_temp = getTemperature();
 
-  if (last_temp != act_temp) {
+  if (last_temp != act_temp || is_full_refresh) {
     printTextRightAligned(act_temp, TXT_FONT, 0);
     last_temp = act_temp;
   }
