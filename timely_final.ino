@@ -44,6 +44,8 @@ const uint8_t DNS_PORT = 53;
 
 const char* PARAM_INPUT_1 = "date";
 const char* PARAM_INPUT_2 = "time";
+const char* PARAM_INPUT_3 = "giorno";
+
 
 // Variable to store the HTTP request
 const char index_html[] PROGMEM = R"rawliteral(
@@ -136,7 +138,7 @@ const char index_html[] PROGMEM = R"rawliteral(
         <div class="container">
             <form action="/get" method="GET">
                 <label>Lunedì:</label>
-                <input type="hidden" name="giorno" value="Lunedì">
+                <input type="hidden" name="giorno" value="Lunedi">
 
                 <input type="text" name="M1" placeholder="Modulo 1">
                 <input type="text" name="M2" placeholder="Modulo 2">
@@ -360,13 +362,6 @@ void littleFSInit() {
   //Serial.println("LittleFS mounted successfully");
 }
 
-
-
-// testing
-
-//const char HelloWorld[] = "Hello World!";
-//const char HelloWeACtStudio[] = "WeAct Studio";
-
 void notFound(AsyncWebServerRequest *request) {
   request->send(404, "text/plain", "Not found");
 }
@@ -461,12 +456,62 @@ void ap_web_server_init() {
       request->send(200, "text/html", "HTTP GET request sent to your ESP on input field (" 
                                      + inputDate + " and " + inputTime + ") with values: " + inputMessage +
                                      "<br><a href=\"/\">Return to Home Page</a>");
-    }
+    }/*
     else {
       Serial.println(inputMessage);
       request->send(200, "text/html", "HTTP GET request sent to your ESP on input (" 
                                      + inputDate + ", " + inputTime + ") with values: " + inputMessage +
                                      "<br><a href=\"/\">Return to Home Page</a>");
+    }*/
+
+    else if (request->hasParam(PARAM_INPUT_3)) {
+      Serial.println("Ricevuto");
+      int8_t i;
+      for (i = 0; i < 7; i++) {
+        if (request->getParam(PARAM_INPUT_3)->value() == daysOfTheWeek[i])
+          break;
+        
+        if (i == 7) {
+          i = -1;
+          break;
+        }
+      }
+
+      Serial.print("Day: ");
+      Serial.println(i);
+
+
+      if (i >= 0) {
+        uint8_t n_moduli;
+        bool mod_status = true;
+        switch (i) {
+          case 1:
+            // lunedì;
+            // controllo che abbia tutti i parametri M1...M9
+            n_moduli = 9;
+
+            for (uint8_t j = 0; j < n_moduli; j++) {
+              String mod_test = "M" + String((j+1));
+              Serial.print("Checking ");
+              Serial.println(mod_test.c_str());
+              if (!request->hasParam(mod_test.c_str())) {
+                mod_status = false;
+                break;
+              }
+            }
+
+            if (mod_status) {
+              Serial.println("All params OK.");
+            }
+            break;
+        }
+      }
+
+      request->send(200, "text/html", "HTTP GET request sent to your ESP for MODULI");
+
+    }
+    else {
+      request->send(200, "text/html", "HTTP GET request sent to your ESP, data not saved.");
     }
     
     Serial.println("Access Point activated");
@@ -1238,7 +1283,7 @@ void setup() {
 
   rtcInit();
 
-  bmpInit();
+  //bmpInit();
 
   initializeButtons();
 
