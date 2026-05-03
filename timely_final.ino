@@ -7,7 +7,7 @@
 #include <GxEPD2_BW.h>
 #include <U8g2_for_Adafruit_GFX.h>
 //#include <Fonts/FreeMonoBold9pt7b.h>
-#include <Adafruit_BMP280.h>
+#include <BMP180.h>
 #include <RTClib.h>
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
@@ -24,7 +24,7 @@ const char POWERED_NAME[] = "Powered by Stressbusters";
  */
 
 // Replace with your network credentials
-const char* SSID = "SN00 - Timely by Stressbusters";
+const char* SSID = "Timely by Stressbusters";
 const char* PASSWD = "pwdpassword";
 const char* HOSTNAME = "timely.local";
 
@@ -132,6 +132,25 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <button type="submit">Salva</button>
             </form>
         </div>
+
+        <div class="container">
+            <form action="/get" method="GET">
+                <label>Lunedì:</label>
+                <input type="hidden" name="giorno" value="Lunedì">
+
+                <input type="text" name="M1" placeholder="Modulo 1">
+                <input type="text" name="M2" placeholder="Modulo 2">
+                <input type="text" name="M3" placeholder="Modulo 3">
+                <input type="text" name="M4" placeholder="Modulo 4">
+                <input type="text" name="M5" placeholder="Modulo 5">
+                <input type="text" name="M6" placeholder="Modulo 6">
+                <input type="text" name="M7" placeholder="Modulo 7">
+                <input type="text" name="M8" placeholder="Modulo 8">
+                <input type="text" name="M9" placeholder="Modulo 9">
+
+                <button type="submit">Salva</button>
+            </form>
+        </div>
     </body>
 </html>
 )rawliteral";
@@ -194,7 +213,8 @@ String last_date = "";
               BMP280
 ==============================*/
 
-Adafruit_BMP280 bmp;
+
+BMP180 bmp(BMP180_ULTRAHIGHRES);
 //float last_temp = 0;
 //float curr_temp = 0;
 String last_temp = "";
@@ -312,23 +332,10 @@ bool rtcInit() {
 }
 
 void bmpInit() {
-  if (!bmp.begin(BMP280_ADDRESS_ALT, 0x60)) {
-    Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
-                      "try a different address!"));
-    Serial.print("SensorID was: 0x"); Serial.println(bmp.sensorID(),16);
-    Serial.print("        ID of 0xFF probably means a bad address, a BMP 180 or BMP 085\n");
-    Serial.print("   ID of 0x56-0x58 represents a BMP 280,\n");
-    Serial.print("        ID of 0x60 represents a BME 280.\n");
-    Serial.print("        ID of 0x61 represents a BME 680.\n");
+  if (!bmp.begin()) {
+    Serial.println(F("Bosch BMP180/BMP085 is not connected or fail to read calibration coefficients"));
     while (1) delay(10);
   }
-
-  /* Default settings from datasheet. */
-  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
-                  Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
-                  Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
-                  Adafruit_BMP280::FILTER_X16,      /* Filtering. */
-                  Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
 }
 
 String getTime() {
@@ -365,20 +372,24 @@ void notFound(AsyncWebServerRequest *request) {
 }
 
 void ap_web_server_init() {
+  if (ap_state) return; // evita reinizializzazioni multiple
+
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(SSID, PASSWD);
-  //Serial.println("Wait 100 ms for AP_START...");
-  delay(100);
   
-  //Serial.println("Set softAPConfig");
+  // Config PRIMA di softAP
   WiFi.softAPConfig(IP, IP, NMASK);
   
-  //IPAddress myIP = WiFi.softAPIP();
-  //Serial.print("AP IP address: ");
-  //Serial.println(WiFi.softAPIP());
+  if (!WiFi.softAP(SSID, PASSWD)) {
+    Serial.println("softAP FAILED");
+    return;
+  }
 
-  //activating dns to use custom hostname
-  dnsServer.start(DNS_PORT, HOSTNAME, IP);
+  delay(100);
+
+  Serial.print("AP IP: ");
+  Serial.println(WiFi.softAPIP());
+
+
 
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/html", index_html);
@@ -458,6 +469,7 @@ void ap_web_server_init() {
                                      "<br><a href=\"/\">Return to Home Page</a>");
     }
     
+    Serial.println("Access Point activated");
   });
   server.onNotFound(notFound);
   // Start server
@@ -798,6 +810,28 @@ void loadConfiguration(const char* filename) {
   
   // Close the file (Curiously, File's destructor doesn't close the file)
   file.close();
+
+  //doc["Giorni"]["Lunedi"][0] = "Telecomunicazioni";
+}
+
+void saveConfiguration(const char* filename) {
+  // Delete existing file, otherwise the configuration is appended to the file
+  LittleFS.remove(filename);
+
+  // Open file for writing
+  File file = LittleFS.open(filename, FILE_WRITE);
+  if (!file) {
+    Serial.println(F("Failed to create file"));
+    return;
+  }
+
+  // Serialize JSON to file
+  if (serializeJson(doc, file) == 0) {
+    Serial.println(F("Failed to write to file"));
+  }
+
+  // Close the file
+  file.close();
 }
 
 String getDate() {
@@ -817,8 +851,8 @@ String getDate() {
 }
 
 String getTemperature() {
-  //return String(bmp.readTemperature(), 1) + "°C";
-  return "22.4°C";
+  return String(bmp.getTemperature(), 1) + "°C";
+  //return "22.4°C";
 }
 
 void printTextRightAligned(String text, const uint8_t* font, int16_t yOffset) {
@@ -1204,7 +1238,7 @@ void setup() {
 
   rtcInit();
 
-  //bmpInit();
+  bmpInit();
 
   initializeButtons();
 
@@ -1289,9 +1323,6 @@ void loop() {
     ap_last_on = millis();
   }
 
-  if (ap_state) {
-    dnsServer.processNextRequest();
-  }
 
   // ALWAST THE LAST IN THE LOOP
   if (is_full_refresh) {
