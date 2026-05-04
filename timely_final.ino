@@ -137,6 +137,16 @@ const char index_html[] PROGMEM = R"rawliteral(
 
         <div class="container">
             <form action="/get" method="GET">
+                <label>Classe: </label>
+                <input type="number" min="1" max="5" name="anno" required>
+
+                <button type="submit">Salva</button>
+            </form>
+        </div>        
+
+        <!--lunedi-->
+        <div class="container">
+            <form action="/get" method="GET">
                 <label>Lunedì:</label>
                 <input type="hidden" name="giorno" value="Lunedi">
 
@@ -149,6 +159,83 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <input type="text" name="M7" placeholder="Modulo 7">
                 <input type="text" name="M8" placeholder="Modulo 8">
                 <input type="text" name="M9" placeholder="Modulo 9">
+                <input type="text" name="M10" placeholder="Modulo 10">
+
+                <button type="submit">Salva</button>
+            </form>
+        </div>
+
+
+        <!--martedi-->
+        <div class="container">
+            <form action="/get" method="GET">
+                <label>Martedì:</label>
+                <input type="hidden" name="giorno" value="Martedi">
+
+                <input type="text" name="M1" placeholder="Modulo 1">
+                <input type="text" name="M2" placeholder="Modulo 2">
+                <input type="text" name="M3" placeholder="Modulo 3">
+                <input type="text" name="M4" placeholder="Modulo 4">
+                <input type="text" name="M5" placeholder="Modulo 5">
+                <input type="text" name="M6" placeholder="Modulo 6">
+
+                <button type="submit">Salva</button>
+            </form>
+        </div>
+
+
+        <!--mercoledi-->
+        <div class="container">
+            <form action="/get" method="GET">
+                <label>Mercoledì:</label>
+                <input type="hidden" name="giorno" value="Mercoledi">
+
+                <input type="text" name="M1" placeholder="Modulo 1">
+                <input type="text" name="M2" placeholder="Modulo 2">
+                <input type="text" name="M3" placeholder="Modulo 3">
+                <input type="text" name="M4" placeholder="Modulo 4">
+                <input type="text" name="M5" placeholder="Modulo 5">
+                <input type="text" name="M6" placeholder="Modulo 6">
+
+                <button type="submit">Salva</button>
+            </form>
+        </div>
+
+
+        <!--giovedì-->
+        <div class="container">
+            <form action="/get" method="GET">
+                <label>Giovedì:</label>
+                <input type="hidden" name="giorno" value="Giovedi">
+
+                <input type="text" name="M1" placeholder="Modulo 1">
+                <input type="text" name="M2" placeholder="Modulo 2">
+                <input type="text" name="M3" placeholder="Modulo 3">
+                <input type="text" name="M4" placeholder="Modulo 4">
+                <input type="text" name="M5" placeholder="Modulo 5">
+                <input type="text" name="M6" placeholder="Modulo 6">
+                <input type="text" name="M7" placeholder="Modulo 7">
+                <input type="text" name="M8" placeholder="Modulo 8">
+                <input type="text" name="M9" placeholder="Modulo 9">
+                <input type="text" name="M10" placeholder="Modulo 10">
+
+                <button type="submit">Salva</button>
+            </form>
+        </div>
+
+
+        <!--venerdì-->
+        <div class="container">
+            <form action="/get" method="GET">
+                <label>Venerdì:</label>
+                <input type="hidden" name="giorno" value="Lunedi">
+
+                <input type="text" name="M1" placeholder="Modulo 1">
+                <input type="text" name="M2" placeholder="Modulo 2">
+                <input type="text" name="M3" placeholder="Modulo 3">
+                <input type="text" name="M4" placeholder="Modulo 4">
+                <input type="text" name="M5" placeholder="Modulo 5">
+                <input type="text" name="M6" placeholder="Modulo 6">
 
                 <button type="submit">Salva</button>
             </form>
@@ -487,7 +574,7 @@ void ap_web_server_init() {
         switch (i) {
           case 1:
             // lunedì;
-            // controllo che abbia tutti i parametri M1...M9
+            // controllo che abbia tutti i parametri M1...M9/M10
             n_moduli = 9;
 
             for (uint8_t j = 0; j < n_moduli; j++) {
@@ -502,7 +589,127 @@ void ap_web_server_init() {
 
             if (mod_status) {
               Serial.println("All params OK.");
+              // adesso modifico tutti i moduli di lunedì
+              // doc["Giorni"]["Lunedi"][0] = "Italiano";
+
+              for (uint8_t j = 0; j < n_moduli; j++) {
+                doc["Giorni"][request->getParam(PARAM_INPUT_3)->value()][j] = request->getParam(("M" + String(j+1)).c_str())->value();
+              }
+              
+              saveConfiguration("/orario.json");
             }
+            break;
+
+          case 2:
+            // martedì
+            n_moduli = 6;
+
+            for (uint8_t j = 0; j < n_moduli; j++) {
+              String mod_test = "M" + String((j+1));
+              Serial.print("Checking ");
+              Serial.println(mod_test.c_str());
+              if (!request->hasParam(mod_test.c_str())) {
+                mod_status = false;
+                break;
+              }
+            }
+
+            if (mod_status) {
+              Serial.println("All params OK.");
+              // adesso modifico tutti i moduli di lunedì
+              // doc["Giorni"]["Lunedi"][0] = "Italiano";
+
+              for (uint8_t j = 0; j < n_moduli; j++) {
+                doc["Giorni"][request->getParam(PARAM_INPUT_3)->value()][j] = request->getParam(("M" + String(j+1)).c_str())->value();
+              }
+              
+              saveConfiguration("/orario.json");
+            }
+
+            break;
+
+          case 3:
+            // martedì
+            n_moduli = 6;
+
+            for (uint8_t j = 0; j < n_moduli; j++) {
+              String mod_test = "M" + String((j+1));
+              Serial.print("Checking ");
+              Serial.println(mod_test.c_str());
+              if (!request->hasParam(mod_test.c_str())) {
+                mod_status = false;
+                break;
+              }
+            }
+
+            if (mod_status) {
+              Serial.println("All params OK.");
+              // adesso modifico tutti i moduli di lunedì
+              // doc["Giorni"]["Lunedi"][0] = "Italiano";
+
+              for (uint8_t j = 0; j < n_moduli; j++) {
+                doc["Giorni"][request->getParam(PARAM_INPUT_3)->value()][j] = request->getParam(("M" + String(j+1)).c_str())->value();
+              }
+              
+              saveConfiguration("/orario.json");
+            }
+
+            break;
+
+          case 4:
+            // martedì
+            n_moduli = 9;
+
+            for (uint8_t j = 0; j < n_moduli; j++) {
+              String mod_test = "M" + String((j+1));
+              Serial.print("Checking ");
+              Serial.println(mod_test.c_str());
+              if (!request->hasParam(mod_test.c_str())) {
+                mod_status = false;
+                break;
+              }
+            }
+
+            if (mod_status) {
+              Serial.println("All params OK.");
+              // adesso modifico tutti i moduli di lunedì
+              // doc["Giorni"]["Lunedi"][0] = "Italiano";
+
+              for (uint8_t j = 0; j < n_moduli; j++) {
+                doc["Giorni"][request->getParam(PARAM_INPUT_3)->value()][j] = request->getParam(("M" + String(j+1)).c_str())->value();
+              }
+              
+              saveConfiguration("/orario.json");
+            }
+
+            break;
+
+          case 5:
+            // martedì
+            n_moduli = 6;
+
+            for (uint8_t j = 0; j < n_moduli; j++) {
+              String mod_test = "M" + String((j+1));
+              Serial.print("Checking ");
+              Serial.println(mod_test.c_str());
+              if (!request->hasParam(mod_test.c_str())) {
+                mod_status = false;
+                break;
+              }
+            }
+
+            if (mod_status) {
+              Serial.println("All params OK.");
+              // adesso modifico tutti i moduli di lunedì
+              // doc["Giorni"]["Lunedi"][0] = "Italiano";
+
+              for (uint8_t j = 0; j < n_moduli; j++) {
+                doc["Giorni"][request->getParam(PARAM_INPUT_3)->value()][j] = request->getParam(("M" + String(j+1)).c_str())->value();
+              }
+              
+              saveConfiguration("/orario.json");
+            }
+
             break;
         }
       }
@@ -1283,7 +1490,7 @@ void setup() {
 
   rtcInit();
 
-  //bmpInit();
+  bmpInit();
 
   initializeButtons();
 
