@@ -45,6 +45,7 @@ const uint8_t DNS_PORT = 53;
 const char* PARAM_INPUT_1 = "date";
 const char* PARAM_INPUT_2 = "time";
 const char* PARAM_INPUT_3 = "giorno";
+const char* PARAM_INPUT_4 = "anno";
 
 
 // Variable to store the HTTP request
@@ -67,14 +68,20 @@ const char index_html[] PROGMEM = R"rawliteral(
             body {
                 background: #262626;
                 display: flex;
-                justify-content: center;
+                flex-direction: column;
                 align-items: center;
+                gap: 1rem;
+                padding: 2rem 1rem;
+                min-height: 100vh;
+                font-family: sans-serif;
             }
 
             .container {
                 background: #000;
                 border-radius: 1rem;
                 padding: 2rem;
+                width: 100%;
+                max-width: 420px;
             }
 
             form {
@@ -88,7 +95,10 @@ const char index_html[] PROGMEM = R"rawliteral(
                 font-size: 1rem;
             }
 
-            input {
+            input[type="date"],
+            input[type="time"],
+            input[type="number"],
+            input[type="text"] {
                 width: 100%;
                 padding: 0.6rem;
                 margin-bottom: 1rem;
@@ -99,7 +109,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 color: #e0e0e0;
             }
 
-            button {
+            button[type="submit"] {
                 background: #5a5a5a;
                 color: #e0e0e0;
                 border: none;
@@ -109,7 +119,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 cursor: pointer;
             }
 
-            button:hover {
+            button[type="submit"]:hover {
                 background: #6a6a6a;
             }
             
@@ -119,127 +129,323 @@ const char index_html[] PROGMEM = R"rawliteral(
                 max-width: 8rem;
                 height: auto;
             }
+
+            /* ── Accordion ── */
+            .accordion {
+                width: 100%;
+                max-width: 420px;
+            }
+
+            .accordion-item {
+                background: #000;
+                border-radius: 1rem;
+                margin-bottom: 1rem;
+                overflow: hidden;
+            }
+
+            .accordion-header {
+                width: 100%;
+                background: #1a1a1a;
+                color: #e0e0e0;
+                border: none;
+                padding: 1rem 1.4rem;
+                font-size: 1.05rem;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-radius: 1rem;
+                transition: background 0.2s;
+            }
+
+            .accordion-header:hover {
+                background: #2a2a2a;
+            }
+
+            .accordion-header.open {
+                border-radius: 1rem 1rem 0 0;
+                background: #222;
+            }
+
+            .accordion-arrow {
+                transition: transform 0.25s;
+                font-size: 0.85rem;
+            }
+
+            .accordion-header.open .accordion-arrow {
+                transform: rotate(180deg);
+            }
+
+            .accordion-body {
+                display: none;
+                padding: 1.2rem 2rem 1.5rem;
+            }
+
+            .accordion-body.open {
+                display: block;
+            }
+
+            /* ── Radio per modulo extra ── */
+            .extra-module-radio {
+                display: none;
+                background: #1a1a1a;
+                border-radius: 0.5rem;
+                padding: 0.8rem 1rem;
+                margin-bottom: 1rem;
+                color: #e0e0e0;
+                font-size: 0.9rem;
+                text-align: left;
+            }
+
+            .extra-module-radio.visible {
+                display: block;
+            }
+
+            .extra-module-radio p {
+                margin-bottom: 0.5rem;
+                font-weight: 600;
+                color: #aaa;
+                font-size: 0.85rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+
+            .radio-group {
+                display: flex;
+                gap: 1.5rem;
+            }
+
+            .radio-group label {
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+                margin: 0;
+                cursor: pointer;
+                color: #e0e0e0;
+                font-size: 1rem;
+            }
+
+            .radio-group input[type="radio"] {
+                width: auto;
+                margin: 0;
+                accent-color: #888;
+            }
+
+            /* modulo 10 nascosto di default */
+            .module-extra {
+                display: none;
+            }
         </style>
     </head>
     <body>
+
+        <!-- Data e ora -->
         <div class="container">
             <img src="logo" alt="">
             <form action="/get" method="GET">
-                <label>Data: </label>
+                <label>Data:</label>
                 <input type="date" min="2026-01-01" name="date" required>
 
-                <label>Tempo: </label>
+                <label>Tempo:</label>
                 <input type="time" name="time" required>
 
                 <button type="submit">Salva</button>
             </form>
         </div>
 
+        <!-- Classe -->
         <div class="container">
             <form action="/get" method="GET">
-                <label>Classe: </label>
-                <input type="number" min="1" max="5" name="anno" required>
+                <label>Classe:</label>
+                <input type="number" id="classeInput" min="1" max="5" name="anno" required>
 
-                <button type="submit">Salva</button>
-            </form>
-        </div>        
-
-        <!--lunedi-->
-        <div class="container">
-            <form action="/get" method="GET">
-                <label>Lunedì:</label>
-                <input type="hidden" name="giorno" value="Lunedi">
-
-                <input type="text" name="M1" placeholder="Modulo 1">
-                <input type="text" name="M2" placeholder="Modulo 2">
-                <input type="text" name="M3" placeholder="Modulo 3">
-                <input type="text" name="M4" placeholder="Modulo 4">
-                <input type="text" name="M5" placeholder="Modulo 5">
-                <input type="text" name="M6" placeholder="Modulo 6">
-                <input type="text" name="M7" placeholder="Modulo 7">
-                <input type="text" name="M8" placeholder="Modulo 8">
-                <input type="text" name="M9" placeholder="Modulo 9">
-                <input type="text" name="M10" placeholder="Modulo 10">
+                <!-- Radio visibile solo per classe 2 -->
+                <div class="extra-module-radio" id="extraRadio">
+                    <p>Il 10° modulo è per:</p>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="giorno_extra" value="Lunedi"> Lunedì
+                        </label>
+                        <label>
+                            <input type="radio" name="giorno_extra" value="Giovedi"> Giovedì
+                        </label>
+                    </div>
+                </div>
 
                 <button type="submit">Salva</button>
             </form>
         </div>
 
+        <!-- Giorni in accordion -->
+        <div class="accordion" id="accordionGiorni">
 
-        <!--martedi-->
-        <div class="container">
-            <form action="/get" method="GET">
-                <label>Martedì:</label>
-                <input type="hidden" name="giorno" value="Martedi">
+            <!-- Lunedì -->
+            <div class="accordion-item">
+                <button type="button" class="accordion-header" data-target="lunedi">
+                    Lunedì <span class="accordion-arrow">▼</span>
+                </button>
+                <div class="accordion-body" id="lunedi">
+                    <form action="/get" method="GET">
+                        <input type="hidden" name="giorno" value="Lunedi">
+                        <input type="text" name="M1" placeholder="Modulo 1">
+                        <input type="text" name="M2" placeholder="Modulo 2">
+                        <input type="text" name="M3" placeholder="Modulo 3">
+                        <input type="text" name="M4" placeholder="Modulo 4">
+                        <input type="text" name="M5" placeholder="Modulo 5">
+                        <input type="text" name="M6" placeholder="Modulo 6">
+                        <input type="text" name="M7" placeholder="Modulo 7">
+                        <input type="text" name="M8" placeholder="Modulo 8">
+                        <input type="text" name="M9" placeholder="Modulo 9">
+                        <input type="text" name="M10" placeholder="Modulo 10" class="module-extra" id="lunedi-M10">
+                        <button type="submit">Salva</button>
+                    </form>
+                </div>
+            </div>
 
-                <input type="text" name="M1" placeholder="Modulo 1">
-                <input type="text" name="M2" placeholder="Modulo 2">
-                <input type="text" name="M3" placeholder="Modulo 3">
-                <input type="text" name="M4" placeholder="Modulo 4">
-                <input type="text" name="M5" placeholder="Modulo 5">
-                <input type="text" name="M6" placeholder="Modulo 6">
+            <!-- Martedì -->
+            <div class="accordion-item">
+                <button type="button" class="accordion-header" data-target="martedi">
+                    Martedì <span class="accordion-arrow">▼</span>
+                </button>
+                <div class="accordion-body" id="martedi">
+                    <form action="/get" method="GET">
+                        <input type="hidden" name="giorno" value="Martedi">
+                        <input type="text" name="M1" placeholder="Modulo 1">
+                        <input type="text" name="M2" placeholder="Modulo 2">
+                        <input type="text" name="M3" placeholder="Modulo 3">
+                        <input type="text" name="M4" placeholder="Modulo 4">
+                        <input type="text" name="M5" placeholder="Modulo 5">
+                        <input type="text" name="M6" placeholder="Modulo 6">
+                        <input type="text" name="M7" placeholder="Modulo 7">
+                        <input type="text" name="M8" placeholder="Modulo 8">
+                        <input type="text" name="M9" placeholder="Modulo 9">
+                        <button type="submit">Salva</button>
+                    </form>
+                </div>
+            </div>
 
-                <button type="submit">Salva</button>
-            </form>
-        </div>
+            <!-- Mercoledì -->
+            <div class="accordion-item">
+                <button type="button" class="accordion-header" data-target="mercoledi">
+                    Mercoledì <span class="accordion-arrow">▼</span>
+                </button>
+                <div class="accordion-body" id="mercoledi">
+                    <form action="/get" method="GET">
+                        <input type="hidden" name="giorno" value="Mercoledi">
+                        <input type="text" name="M1" placeholder="Modulo 1">
+                        <input type="text" name="M2" placeholder="Modulo 2">
+                        <input type="text" name="M3" placeholder="Modulo 3">
+                        <input type="text" name="M4" placeholder="Modulo 4">
+                        <input type="text" name="M5" placeholder="Modulo 5">
+                        <input type="text" name="M6" placeholder="Modulo 6">
+                        <input type="text" name="M7" placeholder="Modulo 7">
+                        <input type="text" name="M8" placeholder="Modulo 8">
+                        <input type="text" name="M9" placeholder="Modulo 9">
+                        <button type="submit">Salva</button>
+                    </form>
+                </div>
+            </div>
 
+            <!-- Giovedì -->
+            <div class="accordion-item">
+                <button type="button" class="accordion-header" data-target="giovedi">
+                    Giovedì <span class="accordion-arrow">▼</span>
+                </button>
+                <div class="accordion-body" id="giovedi">
+                    <form action="/get" method="GET">
+                        <input type="hidden" name="giorno" value="Giovedi">
+                        <input type="text" name="M1" placeholder="Modulo 1">
+                        <input type="text" name="M2" placeholder="Modulo 2">
+                        <input type="text" name="M3" placeholder="Modulo 3">
+                        <input type="text" name="M4" placeholder="Modulo 4">
+                        <input type="text" name="M5" placeholder="Modulo 5">
+                        <input type="text" name="M6" placeholder="Modulo 6">
+                        <input type="text" name="M7" placeholder="Modulo 7">
+                        <input type="text" name="M8" placeholder="Modulo 8">
+                        <input type="text" name="M9" placeholder="Modulo 9">
+                        <input type="text" name="M10" placeholder="Modulo 10" class="module-extra" id="giovedi-M10">
+                        <button type="submit">Salva</button>
+                    </form>
+                </div>
+            </div>
 
-        <!--mercoledi-->
-        <div class="container">
-            <form action="/get" method="GET">
-                <label>Mercoledì:</label>
-                <input type="hidden" name="giorno" value="Mercoledi">
+            <!-- Venerdì -->
+            <div class="accordion-item">
+                <button type="button" class="accordion-header" data-target="venerdi">
+                    Venerdì <span class="accordion-arrow">▼</span>
+                </button>
+                <div class="accordion-body" id="venerdi">
+                    <form action="/get" method="GET">
+                        <input type="hidden" name="giorno" value="Venerdi">
+                        <input type="text" name="M1" placeholder="Modulo 1">
+                        <input type="text" name="M2" placeholder="Modulo 2">
+                        <input type="text" name="M3" placeholder="Modulo 3">
+                        <input type="text" name="M4" placeholder="Modulo 4">
+                        <input type="text" name="M5" placeholder="Modulo 5">
+                        <input type="text" name="M6" placeholder="Modulo 6">
+                        <input type="text" name="M7" placeholder="Modulo 7">
+                        <input type="text" name="M8" placeholder="Modulo 8">
+                        <input type="text" name="M9" placeholder="Modulo 9">
+                        <button type="submit">Salva</button>
+                    </form>
+                </div>
+            </div>
 
-                <input type="text" name="M1" placeholder="Modulo 1">
-                <input type="text" name="M2" placeholder="Modulo 2">
-                <input type="text" name="M3" placeholder="Modulo 3">
-                <input type="text" name="M4" placeholder="Modulo 4">
-                <input type="text" name="M5" placeholder="Modulo 5">
-                <input type="text" name="M6" placeholder="Modulo 6">
+        </div><!-- /accordion -->
 
-                <button type="submit">Salva</button>
-            </form>
-        </div>
+        <script>
+            /* ── Accordion: un solo giorno aperto alla volta ── */
+            document.querySelectorAll('.accordion-header').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetId = btn.dataset.target;
+                    const targetBody = document.getElementById(targetId);
+                    const isOpen = targetBody.classList.contains('open');
 
+                    // Chiudi tutto
+                    document.querySelectorAll('.accordion-body').forEach(b => b.classList.remove('open'));
+                    document.querySelectorAll('.accordion-header').forEach(b => b.classList.remove('open'));
 
-        <!--giovedì-->
-        <div class="container">
-            <form action="/get" method="GET">
-                <label>Giovedì:</label>
-                <input type="hidden" name="giorno" value="Giovedi">
+                    // Apri quello cliccato solo se era chiuso
+                    if (!isOpen) {
+                        targetBody.classList.add('open');
+                        btn.classList.add('open');
+                    }
+                });
+            });
 
-                <input type="text" name="M1" placeholder="Modulo 1">
-                <input type="text" name="M2" placeholder="Modulo 2">
-                <input type="text" name="M3" placeholder="Modulo 3">
-                <input type="text" name="M4" placeholder="Modulo 4">
-                <input type="text" name="M5" placeholder="Modulo 5">
-                <input type="text" name="M6" placeholder="Modulo 6">
-                <input type="text" name="M7" placeholder="Modulo 7">
-                <input type="text" name="M8" placeholder="Modulo 8">
-                <input type="text" name="M9" placeholder="Modulo 9">
-                <input type="text" name="M10" placeholder="Modulo 10">
+            /* ── Classe 2: radio + modulo 10 ── */
+            const classeInput = document.getElementById('classeInput');
+            const extraRadio  = document.getElementById('extraRadio');
+            const lunediM10   = document.getElementById('lunedi-M10');
+            const giovediM10  = document.getElementById('giovedi-M10');
+            const radios      = document.querySelectorAll('input[name="giorno_extra"]');
 
-                <button type="submit">Salva</button>
-            </form>
-        </div>
+            function aggiornaMod10() {
+                const classe = parseInt(classeInput.value);
+                const isSeconda = classe === 2;
 
+                // Mostra/nascondi il radio
+                extraRadio.classList.toggle('visible', isSeconda);
 
-        <!--venerdì-->
-        <div class="container">
-            <form action="/get" method="GET">
-                <label>Venerdì:</label>
-                <input type="hidden" name="giorno" value="Lunedi">
+                // Nascondi entrambi i M10 di default
+                lunediM10.style.display  = 'none';
+                giovediM10.style.display = 'none';
 
-                <input type="text" name="M1" placeholder="Modulo 1">
-                <input type="text" name="M2" placeholder="Modulo 2">
-                <input type="text" name="M3" placeholder="Modulo 3">
-                <input type="text" name="M4" placeholder="Modulo 4">
-                <input type="text" name="M5" placeholder="Modulo 5">
-                <input type="text" name="M6" placeholder="Modulo 6">
+                if (isSeconda) {
+                    // Mostra il M10 del giorno selezionato dal radio
+                    const selezionato = document.querySelector('input[name="giorno_extra"]:checked').value;
+                    if (selezionato === 'Lunedi')  lunediM10.style.display  = 'block';
+                    if (selezionato === 'Giovedi') giovediM10.style.display = 'block';
+                }
+            }
 
-                <button type="submit">Salva</button>
-            </form>
-        </div>
+            classeInput.addEventListener('input', aggiornaMod10);
+            radios.forEach(r => r.addEventListener('change', aggiornaMod10));
+
+            // Stato iniziale
+            aggiornaMod10();
+        </script>
     </body>
 </html>
 )rawliteral";
@@ -551,6 +757,14 @@ void ap_web_server_init() {
                                      "<br><a href=\"/\">Return to Home Page</a>");
     }*/
 
+    else if (request->hasParam(PARAM_INPUT_4)) {
+      uint8_t anno = (request->getParam(PARAM_INPUT_3)->value()).toInt();
+      if (anno > 0 && anno < 6) {
+        doc["Classe"] = anno;
+        saveConfiguration("/orario.json");
+      }
+
+    }
     else if (request->hasParam(PARAM_INPUT_3)) {
       Serial.println("Ricevuto");
       int8_t i;
@@ -586,6 +800,10 @@ void ap_web_server_init() {
                 break;
               }
             }
+
+            // controllo se c'è un decimo modulo
+            if (request->hasParam("M10") && doc["Classe"] == 2)
+              n_moduli = 10;
 
             if (mod_status) {
               Serial.println("All params OK.");
@@ -629,7 +847,7 @@ void ap_web_server_init() {
             break;
 
           case 3:
-            // martedì
+            // mercoledì
             n_moduli = 6;
 
             for (uint8_t j = 0; j < n_moduli; j++) {
@@ -657,7 +875,7 @@ void ap_web_server_init() {
             break;
 
           case 4:
-            // martedì
+            // giovedì
             n_moduli = 9;
 
             for (uint8_t j = 0; j < n_moduli; j++) {
@@ -669,6 +887,10 @@ void ap_web_server_init() {
                 break;
               }
             }
+
+            // controllo se c'è un decimo modulo
+            if (request->hasParam("M10") && doc["Classe"] == 2)
+              n_moduli = 10;
 
             if (mod_status) {
               Serial.println("All params OK.");
@@ -685,7 +907,7 @@ void ap_web_server_init() {
             break;
 
           case 5:
-            // martedì
+            // venerdì
             n_moduli = 6;
 
             for (uint8_t j = 0; j < n_moduli; j++) {
@@ -718,7 +940,7 @@ void ap_web_server_init() {
 
     }
     else {
-      request->send(200, "text/html", "HTTP GET request sent to your ESP, data not saved.");
+      request->send(200, "text/html", "HTTP GET request sent to your ESP. ERROR malformed.");
     }
     
     Serial.println("Access Point activated");
